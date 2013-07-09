@@ -28,7 +28,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 
-public class GameRepository {
+public final class GameRepository {
 
 	private final static String ISS = "iss";
 	private final static String GAMES = "games";
@@ -77,7 +77,7 @@ public class GameRepository {
 		int lineCount = 0;
 		String strLine;
 
-		BulkRequestBuilder bulkRequest = client.prepareBulk();
+		BulkRequestBuilder bulkRequest = createNewBulkRequest();
 
 		try {
 			while ((strLine = br.readLine()) != null) {
@@ -90,11 +90,8 @@ public class GameRepository {
 				lineCount++;
 
 				if (lineCount % 10000 == 0) {
-					BulkResponse response = bulkRequest.execute().actionGet();
-					if (!response.hasFailures()) {
-						System.out.println(lineCount + " games imported.");
-						bulkRequest = client.prepareBulk();
-					}
+					executeBulkRequest(lineCount, bulkRequest);
+					bulkRequest = createNewBulkRequest();
 				}
 			}
 		} catch (IOException e) {
@@ -102,14 +99,29 @@ public class GameRepository {
 		}
 
 		if (bulkRequest.numberOfActions() > 0) {
-			BulkResponse response = bulkRequest.execute().actionGet();
-			if (!response.hasFailures()) {
-				System.out.println(lineCount + " games imported.");
-				bulkRequest = client.prepareBulk();
-			}
+			executeBulkRequest(lineCount, bulkRequest);
 		}
 
 		refreshIndex(ISS);
+	}
+
+	private BulkRequestBuilder createNewBulkRequest() {
+		return client.prepareBulk();
+	}
+
+	private void executeBulkRequest(int gamesImportedSoFar,
+			BulkRequestBuilder bulkRequest) {
+		BulkResponse response = bulkRequest.execute().actionGet();
+		evaluateSuccess(gamesImportedSoFar, response);
+	}
+
+	private void evaluateSuccess(int gamesImportedSoFar, BulkResponse response) {
+		if (!response.hasFailures()) {
+			System.out.println(gamesImportedSoFar + " games imported.");
+		} else {
+			System.out.println(gamesImportedSoFar
+					+ " games imported. Some have failures.");
+		}
 	}
 
 	private void refreshIndex(String index) {

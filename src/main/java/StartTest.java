@@ -18,6 +18,8 @@ public class StartTest {
 	public static void main(String[] args) throws ElasticSearchException,
 			IOException, InterruptedException {
 
+		System.out.println("Please wait for the initialization of the db.");
+
 		GameRepository gameRepository = new GameRepository();
 		gameRepository.init();
 
