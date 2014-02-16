@@ -2,7 +2,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.search.SearchResponse;
 
 import server.db.GameRepository;
@@ -15,8 +14,8 @@ public class StartTest {
 	 * @throws ElasticSearchException
 	 * @throws InterruptedException
 	 */
-	public static void main(String[] args) throws ElasticSearchException,
-			IOException, InterruptedException {
+	public static void main(String[] args) throws IOException,
+			InterruptedException {
 
 		System.out.println("Please wait for the initialization of the db.");
 

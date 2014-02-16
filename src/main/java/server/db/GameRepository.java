@@ -23,7 +23,7 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.index.query.FieldQueryBuilder;
+import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
@@ -219,9 +219,10 @@ public final class GameRepository {
 	 * @return Games where the detail is found
 	 */
 	public SearchResponse searchForDetail(String detail) {
-		FieldQueryBuilder qb = QueryBuilders.fieldQuery("completegame", detail);
+		MatchQueryBuilder matchQuery = QueryBuilders.matchQuery("completegame",
+				detail);
 
-		return executeQuery(qb);
+		return executeQuery(matchQuery);
 	}
 
 	private SearchResponse executeQuery(QueryBuilder qb) {
