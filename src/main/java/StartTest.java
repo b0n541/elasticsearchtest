@@ -18,18 +18,25 @@ public class StartTest {
 			InterruptedException {
 
 		System.out.println("Please wait for the initialization of the db.");
-
+		Long startTime = System.currentTimeMillis();
+		System.out.println("Start ElasticSearch...");
 		GameRepository gameRepository = new GameRepository();
+		System.out.println("Initialize data...");
 		gameRepository.init();
+		Long stopTime = System.currentTimeMillis();
 
+		System.out.println("Game repository started in "
+				+ (stopTime - startTime) / 1000 + " seconds.");
 		System.out.println(gameRepository.getGameCount() + " games in db.");
 
 		System.out
-				.println("You can search after player names or for game details. Type 'detail' followed by search string.");
+				.println("You can search after player names or for game details.");
+		System.out.println("Type just the player name to search a player.");
+		System.out
+				.println("Type 'detail' followed by search string to search in the complete game.");
+		System.out.println("Type 'shutdown' to stop the game repository.");
 
 		handleConsoleInputs(gameRepository);
-
-		gameRepository.shutDown();
 	}
 
 	private static void handleConsoleInputs(GameRepository gameRepository) {
@@ -37,7 +44,10 @@ public class StartTest {
 		String line = null;
 		try {
 			while ((line = br.readLine()) != null && line.length() > 0) {
-				if (line.startsWith("detail")) {
+				if (line.equals("shutdown")) {
+					GameRepository.shutDown();
+					System.exit(0);
+				} else if (line.startsWith("detail")) {
 					searchForDetail(gameRepository, line.replace("detail ", ""));
 				} else {
 					searchForUser(gameRepository, line);
