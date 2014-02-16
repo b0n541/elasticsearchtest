@@ -33,12 +33,12 @@ public final class GameRepository {
 	private final static String ISS = "iss";
 	private final static String GAMES = "games";
 
-	private final Node node;
+	private final static Node node = nodeBuilder().clusterName("JSkat")
+			.local(true).node();
 	private final Client client;
 
 	public GameRepository() {
 		// on startup
-		node = nodeBuilder().node();
 		client = node.client();
 
 		waitUntilIndexesAreInitialized();
@@ -191,7 +191,7 @@ public final class GameRepository {
 	/**
 	 * Shuts database down.
 	 */
-	public void shutDown() {
+	public static void shutDown() {
 		// on shutdown
 		node.close();
 	}
