@@ -13,7 +13,6 @@ import java.util.regex.Pattern;
 
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequestBuilder;
-import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -40,15 +39,20 @@ public final class GameRepository {
 	public GameRepository() {
 		// on startup
 		client = node.client();
-
 		waitUntilIndexesAreInitialized();
+		waitForGreenStatus();
+	}
+
+	private void waitForGreenStatus() {
+		ClusterHealthRequestBuilder prepareHealth = client.admin().cluster()
+				.prepareHealth(ISS);
+		prepareHealth.setWaitForGreenStatus().execute().actionGet();
 	}
 
 	private void waitUntilIndexesAreInitialized() {
 		ClusterHealthRequestBuilder prepareHealth = client.admin().cluster()
 				.prepareHealth(ISS);
-		ClusterHealthResponse healtResponse = prepareHealth
-				.setWaitForGreenStatus().execute().actionGet();
+		prepareHealth.setWaitForActiveShards(1).execute().actionGet();
 	}
 
 	/**
@@ -180,7 +184,7 @@ public final class GameRepository {
 
 	/**
 	 * Gets the total count of games in database.
-	 * 
+	 *
 	 * @return Count of games
 	 */
 	public long getGameCount() {
@@ -198,7 +202,7 @@ public final class GameRepository {
 
 	/**
 	 * Searches for games a user made on ISS.
-	 * 
+	 *
 	 * @param user
 	 *            Login name of user
 	 * @return Games the user took part
@@ -213,7 +217,7 @@ public final class GameRepository {
 
 	/**
 	 * Searches for a detail in the game summary (ISS format).
-	 * 
+	 *
 	 * @param detail
 	 *            Search string
 	 * @return Games where the detail is found
