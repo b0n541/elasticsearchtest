@@ -33,9 +33,9 @@ public final class GameRepository {
 	private final static String ISS = "iss";
 	private final static String GAMES = "games";
 
-	private final static Node node = nodeBuilder()
-			.settings(Settings.settingsBuilder().put("http.enabled", false).put("path.home", "/tmp"))
-			.clusterName("JSkat").data(true).local(true).node();
+	private final static Node node = nodeBuilder().settings(Settings.settingsBuilder().put("http.enabled", false)
+			.put("path.home", "/tmp").put("discovery.zen.ping.multicast", false).put("index.number_of_shards", 1)
+			.put("index.number_of_replicas", 0)).clusterName("JSkat").data(true).local(true).node();
 	private final static Client client = node.client();
 
 	public GameRepository() {
