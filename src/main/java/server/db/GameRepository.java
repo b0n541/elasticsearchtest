@@ -21,6 +21,7 @@ import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.query.MatchQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -32,26 +33,24 @@ public final class GameRepository {
 	private final static String ISS = "iss";
 	private final static String GAMES = "games";
 
-	private final static Node node = nodeBuilder().clusterName("JSkat")
-			.local(true).node();
-	private final Client client;
+	private final static Node node = nodeBuilder()
+			.settings(Settings.settingsBuilder().put("http.enabled", false).put("path.home", "/tmp"))
+			.clusterName("JSkat").data(true).local(true).node();
+	private final static Client client = node.client();
 
 	public GameRepository() {
 		// on startup
-		client = node.client();
 		waitUntilIndexesAreInitialized();
 		waitForGreenStatus();
 	}
 
 	private void waitForGreenStatus() {
-		ClusterHealthRequestBuilder prepareHealth = client.admin().cluster()
-				.prepareHealth(ISS);
+		ClusterHealthRequestBuilder prepareHealth = client.admin().cluster().prepareHealth(ISS);
 		prepareHealth.setWaitForGreenStatus().execute().actionGet();
 	}
 
 	private void waitUntilIndexesAreInitialized() {
-		ClusterHealthRequestBuilder prepareHealth = client.admin().cluster()
-				.prepareHealth(ISS);
+		ClusterHealthRequestBuilder prepareHealth = client.admin().cluster().prepareHealth(ISS);
 		prepareHealth.setWaitForActiveShards(1).execute().actionGet();
 	}
 
@@ -66,10 +65,8 @@ public final class GameRepository {
 	}
 
 	private boolean issDataAvailable(String index) {
-		IndicesExistsRequest indicesExistsRequest = new IndicesExistsRequest(
-				index);
-		ActionFuture<IndicesExistsResponse> exists = client.admin().indices()
-				.exists(indicesExistsRequest);
+		IndicesExistsRequest indicesExistsRequest = new IndicesExistsRequest(index);
+		ActionFuture<IndicesExistsResponse> exists = client.admin().indices().exists(indicesExistsRequest);
 		IndicesExistsResponse indicesExistsResponse = exists.actionGet();
 		return indicesExistsResponse.isExists();
 	}
@@ -88,8 +85,7 @@ public final class GameRepository {
 
 				XContentBuilder builder = createJson(strLine);
 
-				bulkRequest.add(client.prepareIndex(ISS, GAMES).setSource(
-						builder));
+				bulkRequest.add(client.prepareIndex(ISS, GAMES).setSource(builder));
 
 				lineCount++;
 
@@ -113,8 +109,7 @@ public final class GameRepository {
 		return client.prepareBulk();
 	}
 
-	private void executeBulkRequest(int gamesImportedSoFar,
-			BulkRequestBuilder bulkRequest) {
+	private void executeBulkRequest(int gamesImportedSoFar, BulkRequestBuilder bulkRequest) {
 		BulkResponse response = bulkRequest.execute().actionGet();
 		evaluateSuccess(gamesImportedSoFar, response);
 	}
@@ -123,15 +118,13 @@ public final class GameRepository {
 		if (!response.hasFailures()) {
 			System.out.println(gamesImportedSoFar + " games imported.");
 		} else {
-			System.out.println(gamesImportedSoFar
-					+ " games imported. Some have failures.");
+			System.out.println(gamesImportedSoFar + " games imported. Some have failures.");
 		}
 	}
 
 	private void refreshIndex(String index) {
 		RefreshRequest request = new RefreshRequest(index);
-		ActionFuture<RefreshResponse> refresh = client.admin().indices()
-				.refresh(request);
+		ActionFuture<RefreshResponse> refresh = client.admin().indices().refresh(request);
 		refresh.actionGet();
 	}
 
@@ -146,15 +139,13 @@ public final class GameRepository {
 	}
 
 	private BufferedReader getFile() {
-		InputStream inputStream = this.getClass().getClassLoader()
-				.getResourceAsStream("issgames.sgf");
+		InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("issgames.sgf");
 		DataInputStream in = new DataInputStream(inputStream);
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
 		return br;
 	}
 
-	private void parseLine(XContentBuilder builder, String game)
-			throws IOException {
+	private void parseLine(XContentBuilder builder, String game) throws IOException {
 
 		final Pattern summaryPartPattern = Pattern.compile("(\\w+)\\[(.*?)\\]"); //$NON-NLS-1$
 		final Matcher summaryPartMatcher = summaryPartPattern.matcher(game);
@@ -168,8 +159,8 @@ public final class GameRepository {
 		}
 	}
 
-	private static void parseSummaryPart(XContentBuilder builder,
-			String summaryPartMarker, String summaryPart) throws IOException {
+	private static void parseSummaryPart(XContentBuilder builder, String summaryPartMarker, String summaryPart)
+			throws IOException {
 
 		if ("ID".equals(summaryPartMarker)) { //$NON-NLS-1$
 			builder.field("gameID", summaryPart);
@@ -197,6 +188,7 @@ public final class GameRepository {
 	 */
 	public static void shutDown() {
 		// on shutdown
+		client.close();
 		node.close();
 	}
 
@@ -209,8 +201,7 @@ public final class GameRepository {
 	 */
 	public SearchResponse searchForUser(String user) {
 
-		QueryBuilder qb = QueryBuilders.multiMatchQuery(user, "forehand",
-				"middlehand", "rearhand");
+		QueryBuilder qb = QueryBuilders.multiMatchQuery(user, "forehand", "middlehand", "rearhand");
 
 		return executeQuery(qb);
 	}
@@ -223,15 +214,14 @@ public final class GameRepository {
 	 * @return Games where the detail is found
 	 */
 	public SearchResponse searchForDetail(String detail) {
-		MatchQueryBuilder matchQuery = QueryBuilders.matchQuery("completegame",
-				detail);
+		MatchQueryBuilder matchQuery = QueryBuilders.matchQuery("completegame", detail);
 
 		return executeQuery(matchQuery);
 	}
 
 	private SearchResponse executeQuery(QueryBuilder qb) {
-		SearchResponse searchResponse = client.prepareSearch("iss")
-				.setTypes("games").setQuery(qb).execute().actionGet();
+		SearchResponse searchResponse = client.prepareSearch("iss").setTypes("games").setQuery(qb).execute()
+				.actionGet();
 
 		return searchResponse;
 	}
